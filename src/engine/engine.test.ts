@@ -234,6 +234,7 @@ describe('電路', () => {
     sim.run(0.2);
     sim.action(rc, 'keyUp', 1);
     expect(host.state.out.UP).toBe(true);
+    expect(host.state.status).toBe('上觸發');
     sim.run(2);
     // 同向再按不延長、反向與停都不理
     sim.action(rc, 'keyDown', 1);

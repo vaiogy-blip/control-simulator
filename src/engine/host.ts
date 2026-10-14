@@ -970,6 +970,10 @@ function hostStep(s: HostState, p: HostParams, ctx: StepCtx): void {
 
   s.status = s.cut
     ? '斷電'
+    : s.trafficT > 0
+      ? s.motion === 'down'
+        ? '下觸發'
+        : '上觸發'
     : s.protectT > 0
       ? '馬達保護等待'
       : s.motion === 'up'

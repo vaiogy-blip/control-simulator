@@ -66,7 +66,7 @@ function HostImage({ d }: { d: DeviceInstance }) {
   const cx = (win.x1 + win.x2) / 2;
   const timer =
     hs.trafficT > 0
-      ? `紅綠燈${hs.motion === 'down' ? '下' : '上'} 剩 ${Math.ceil(hs.trafficT)} 秒`
+      ? `倒數 ${Math.ceil(hs.trafficT)} 秒`
       : hs.autoCloseT !== null
       ? `自動關門倒數 ${Math.ceil(hs.autoCloseT)} 秒`
       : hs.stage2T !== null
