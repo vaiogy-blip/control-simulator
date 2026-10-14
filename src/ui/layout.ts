@@ -88,16 +88,14 @@ export const HOST_IMG = {
 /** 柵欄機圖（原圖裁切 x 210~1635、y 2780~5435；柵欄桿另外畫） */
 const GK = 0.13;
 const gx = imgScale(210, GK);
-const ARM = 170;
+const r1 = (v: number) => Math.round(v * 10) / 10;
 export const GATE_IMG = {
-  arm: ARM,
-  imgW: Math.round(1425 * GK * 10) / 10,
-  imgH: Math.round(2655 * GK * 10) / 10,
-  w: Math.round(Math.max(1425 * GK, gx(900) + ARM + 6)),
-  h: Math.round(ARM + 2655 * GK),
-  pivotX: gx(900),
-  pivotY: ARM + 2,
-  armW: 16,
+  imgW: r1(1425 * GK),
+  imgH: r1(2655 * GK),
+  /** 軸心在機箱上方的圓圈（原圖約 865, 3122） */
+  pivotX: gx(865),
+  pivotYInImg: r1((3122 - 2780) * GK),
+  armW: 14,
   ports: [
     ['UP', '上'],
     ['STOP', '停'],
@@ -111,9 +109,22 @@ export const GATE_IMG = {
     [null, 'G'],
   ] as [string | null, string][],
   portX: [311, 432.5, 553, 673.5, 856, 977.5, 1098.5, 1274, 1395, 1515.5].map(gx),
-  portY: Math.round((ARM + (5324.5 - 2780) * GK) * 10) / 10,
+  portYInImg: r1((5324.5 - 2780) * GK),
   portR: 5.5,
 };
+
+/** 柵欄機依桿長算出的尺寸：機箱圖往下移，讓直立的桿子放得下 */
+export function gateGeom(armLength: number) {
+  const arm = Math.max(40, Math.min(600, Number(armLength) || 170));
+  const top = Math.max(0, arm - GATE_IMG.pivotYInImg + 6);
+  return {
+    arm,
+    top,
+    pivotY: top + GATE_IMG.pivotYInImg,
+    w: Math.round(Math.max(GATE_IMG.imgW + 90, GATE_IMG.pivotX + arm + 6)),
+    h: Math.round(top + GATE_IMG.imgH),
+  };
+}
 
 /** 各設備的外框大小與端子位置（未縮放） */
 export function layoutOf(d: DeviceInstance): Layout {
@@ -141,10 +152,11 @@ export function layoutOf(d: DeviceInstance): Layout {
     case 'gate': {
       // 依使用者提供的柵欄機圖：機箱在下、柵欄桿在機箱上方轉動
       const ports: Record<string, PortPos> = {};
+      const g = gateGeom(p.armLength);
       GATE_IMG.ports.forEach(([id, tag], i) => {
-        if (id) ports[id] = { x: GATE_IMG.portX[i], y: GATE_IMG.portY, side: 'bottom', tag };
+        if (id) ports[id] = { x: GATE_IMG.portX[i], y: r1(g.top + GATE_IMG.portYInImg), side: 'bottom', tag };
       });
-      return { w: GATE_IMG.w, h: GATE_IMG.h, ports };
+      return { w: g.w, h: g.h, ports };
     }
     case 'lamp':
       return { w: 90, h: 96, ports: row([['P', '+'], ['COM', 'COM']], 96, 'bottom', [28, 62]) };

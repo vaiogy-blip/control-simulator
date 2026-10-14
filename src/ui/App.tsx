@@ -22,6 +22,8 @@ type Drag =
   | { kind: 'wire'; device: string; port: string; x: number; y: number; sx: number; sy: number; pts: Pt[]; click: boolean }
   /** 拖曳已選取接線的某一段來調整路徑 */
   | { kind: 'seg'; wire: string; i: number; horiz: boolean; full: Pt[] }
+  /** 拖曳選取設備右下角的小方塊調整圖示大小 */
+  | { kind: 'scale'; id: string; s0: number; d0: number }
   | null;
 
 const snap = (v: number) => Math.round(v / G) * G;
@@ -276,6 +278,16 @@ export function App() {
           relayout();
         }
       }
+    } else if (drag.kind === 'scale') {
+      const d = sim.devices.find((x) => x.id === drag.id);
+      if (d) {
+        const dist = Math.max(1, p.x - d.x + (p.y - d.y));
+        const ns = Math.round(Math.max(0.3, Math.min(3, (drag.s0 * dist) / drag.d0)) * 20) / 20;
+        if (ns !== d.scale) {
+          d.scale = ns;
+          relayout();
+        }
+      }
     } else if (drag.kind === 'seg') {
       const w = sim.wires.find((x) => x.id === drag.wire);
       if (!w) return;
@@ -389,6 +401,12 @@ export function App() {
   const netLive = (devId: string, port: string) => {
     const n = sol.net.get(pkey(devId, port));
     return !!n && (sol.hot.has(n) || sol.active.has(n));
+  };
+
+  const startScale = (e: React.PointerEvent, d: DeviceInstance) => {
+    e.stopPropagation();
+    const p = toSvg(e);
+    setDrag({ kind: 'scale', id: d.id, s0: scaleOf(d), d0: Math.max(1, p.x - d.x + (p.y - d.y)) });
   };
 
   const startMove = (e: React.PointerEvent, d: DeviceInstance) => {
@@ -516,7 +534,7 @@ export function App() {
           viewBox={`0 0 ${maxX} ${maxY}`}
           onPointerMove={onPointerMove}
           onPointerUp={() => {
-            if (drag?.kind === 'move' && drag.moved) relayout();
+            if ((drag?.kind === 'move' && drag.moved) || drag?.kind === 'scale') relayout();
             if (drag?.kind === 'wire' && drag.click) return;
             setDrag(null);
           }}
@@ -654,6 +672,18 @@ export function App() {
                     </g>
                   );
                 })}
+                {selected && (
+                  <rect
+                    className="scale-handle"
+                    x={lay.w - 5 / sc}
+                    y={lay.h - 5 / sc}
+                    width={10 / sc}
+                    height={10 / sc}
+                    onPointerDown={(e) => startScale(e, d)}
+                  >
+                    <title>拖曳調整圖示大小</title>
+                  </rect>
+                )}
               </g>
             );
           })}

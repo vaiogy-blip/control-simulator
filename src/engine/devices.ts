@@ -180,6 +180,8 @@ interface GateParams {
   mode: 'direct' | 'pulse';
   openTime: number;
   closeTime: number;
+  /** 畫面上的桿子長度（只影響外觀） */
+  armLength: number;
 }
 interface GateState {
   pos: number;
@@ -200,7 +202,7 @@ export const gate: DeviceModel<GateParams, GateState> = {
     { id: 'OL', label: '上限' },
     { id: 'CL', label: '下限' },
   ],
-  defaultParams: () => ({ mode: 'direct', openTime: 3, closeTime: 3 }),
+  defaultParams: () => ({ mode: 'direct', openTime: 3, closeTime: 3, armLength: 170 }),
   init: () => ({ pos: 0, motion: 'idle', prev: {} }),
   senses: () => [
     { id: 'UP', a: 'UP', b: 'COM' },

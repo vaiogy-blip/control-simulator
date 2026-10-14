@@ -82,6 +82,7 @@ const FIELDS: Record<string, FieldDef[]> = {
     },
     { key: 'openTime', label: '開門時間（秒）', kind: 'number', step: 0.5 },
     { key: 'closeTime', label: '關門時間（秒）', kind: 'number', step: 0.5 },
+    { key: 'armLength', label: '桿子長度', kind: 'number', step: 10, layout: true },
   ],
   lamp: [
     { key: 'label', label: '名稱', kind: 'text' },
@@ -233,18 +234,10 @@ export function Inspector({ sim, device, wire, changed, relayout, sendKeys }: Pr
       </div>
       {d.type !== 'node' && (
         <div className="field">
-          <label>圖示大小 {Math.round(scale * 100)}%</label>
-          <input
-            type="range"
-            min={50}
-            max={200}
-            step={10}
-            value={scale * 100}
-            onChange={(e) => {
-              d.scale = Number(e.target.value) / 100;
-              relayout();
-            }}
-          />
+          <label>圖示大小</label>
+          <span className="hint">
+            {Math.round(scale * 100)}%（拖曳設備右下角的小方塊調整）
+          </span>
         </div>
       )}
       {d.type !== 'node' && (
@@ -293,7 +286,7 @@ export function Inspector({ sim, device, wire, changed, relayout, sendKeys }: Pr
               ))}
             </select>
           ) : f.kind === 'number' ? (
-            <input type="number" step={f.step} min={0} value={d.params[f.key]} onChange={(e) => set(f.key, Math.max(0, Number(e.target.value)))} />
+            <input type="number" step={f.step} min={0} value={d.params[f.key]} onChange={(e) => set(f.key, Math.max(0, Number(e.target.value)), f.layout)} />
           ) : f.kind === 'color' ? (
             <input type="color" value={d.params[f.key]} onChange={(e) => set(f.key, e.target.value)} />
           ) : (
