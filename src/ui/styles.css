@@ -613,3 +613,30 @@ input[type='range'] {
   stroke-dasharray: 4 3;
   pointer-events: none;
 }
+
+/* 警示燈閃爍、警報喇叭震動；暫停模擬時停在當下 */
+.lamp-blink {
+  animation: lamp-blink 1s steps(1, end) infinite;
+}
+@keyframes lamp-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.buzzer-on {
+  animation: buzzer-shake 0.2s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes buzzer-shake {
+  25% {
+    transform: translateX(-1.5px);
+  }
+  75% {
+    transform: translateX(1.5px);
+  }
+}
+.paused .lamp-blink,
+.paused .buzzer-on {
+  animation-play-state: paused;
+}

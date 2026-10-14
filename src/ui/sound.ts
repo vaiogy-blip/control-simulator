@@ -23,3 +23,36 @@ export function playBeep(kind: BeepKind) {
     /* 瀏覽器不支援音效時略過 */
   }
 }
+
+let siren: { osc: OscillatorNode; lfo: OscillatorNode; gain: GainNode } | null = null;
+
+/** 警報喇叭：通電時持續發出高低起伏的警報聲，斷電或暫停就停 */
+export function setSiren(on: boolean) {
+  try {
+    if (on && !siren) {
+      ctx ??= new AudioContext();
+      const osc = ctx.createOscillator();
+      const lfo = ctx.createOscillator();
+      const depth = ctx.createGain();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = 1000;
+      lfo.type = 'triangle';
+      lfo.frequency.value = 2.5;
+      depth.gain.value = 350;
+      lfo.connect(depth).connect(osc.frequency);
+      gain.gain.value = 0.035;
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      lfo.start();
+      siren = { osc, lfo, gain };
+    } else if (!on && siren) {
+      siren.osc.stop();
+      siren.lfo.stop();
+      siren.gain.disconnect();
+      siren = null;
+    }
+  } catch {
+    /* 瀏覽器不支援音效時略過 */
+  }
+}

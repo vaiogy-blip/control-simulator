@@ -83,6 +83,10 @@ export interface DeviceModel<P = any, S = any> {
   points?(state: S, params: P, inputs: Record<string, boolean>): PointDef[];
   /** 取出設備自己產生的紀錄（例如主機嗶聲） */
   drainLog?(state: S): string[];
+  /** 判斷動作是否跑完時要比對的狀態（去掉一直在走的時鐘等欄位） */
+  quiet?(state: S): unknown;
+  /** 狀態看似沒變但仍在等待中（例如按住計時、鍵盤輸入中） */
+  busy?(state: S, params: P): boolean;
 }
 
 export interface DeviceInstance {

@@ -6,12 +6,14 @@ import type { BeepLog, HostState } from '../engine/host';
 import { DeviceBody } from './DeviceBody';
 import { Inspector } from './Inspector';
 import { EventLog } from './EventLog';
-import { playBeep } from './sound';
+import { playBeep, setSiren } from './sound';
 import { boxOf, GATE_IMG, HOST_IMG, layoutOf, portWorld, scaleOf, titleBelow } from './layout';
 import { G, junctions, routeAll, type RouteReq } from './route';
 import { wireColor } from './wires';
 
 const STORAGE_KEY = 'control-sim-project-v3';
+/** 自動播放時，狀態連續靜止這麼多秒（模擬時間）就算這次動作跑完 */
+const SETTLE = 1;
 const CATEGORIES = ['控制主機', '遙控', '電源', '輸入設備', '輸出設備', '繼電器類', '配線'] as const;
 
 type Sel = { kind: 'device' | 'wire'; id: string } | null;
@@ -61,6 +63,8 @@ export function App() {
   const [tick, setTick] = useState(0);
   const [layoutRev, setLayoutRev] = useState(0);
   const [running, setRunning] = useState(false);
+  /** 操作輸入設備時自動播放，動作完整跑完（狀態靜止 SETTLE 秒）後自動暫停 */
+  const auto = useRef({ on: false, sig: '', quiet: 0 });
   // 右側面板與下方動作紀錄可收起來，讓畫布大一點（記在這個瀏覽器）
   const [showSide, setShowSide] = useState(() => readPref('control-sim-side', true));
   const [showLog, setShowLog] = useState(() => readPref('control-sim-log', true));
@@ -78,6 +82,20 @@ export function App() {
   const lastBeeps = useRef(new Map<string, BeepLog | undefined>());
 
   const changed = useCallback(() => setTick((t) => t + 1), []);
+  /** 手動播放／暫停：手動播放會一直跑，直到再按暫停 */
+  const toggleRun = useCallback(() => {
+    auto.current.on = false;
+    setRunning((r) => !r);
+  }, []);
+  /** 輸入設備動作：暫停中就自動播放；已在自動播放就重新等這次動作跑完 */
+  const kick = useCallback(() => {
+    setRunning((r) => {
+      if (!r) auto.current.on = true;
+      return true;
+    });
+    auto.current.sig = '';
+    auto.current.quiet = 0;
+  }, []);
   /** 設備位置、接線、端子有變動時要重新佈線 */
   const relayout = useCallback(() => {
     setLayoutRev((r) => r + 1);
@@ -95,10 +113,22 @@ export function App() {
       if (running) {
         acc += el * speed;
         let n = 0;
+        const a = auto.current;
         while (acc >= DT && n < 400) {
           sim.step();
           acc -= DT;
           n++;
+          if (!a.on) continue;
+          const sig = sim.signature();
+          if (sig !== a.sig || sim.busy()) {
+            a.sig = sig;
+            a.quiet = 0;
+          } else if ((a.quiet += DT) >= SETTLE) {
+            a.on = false;
+            acc = 0;
+            setRunning(false);
+            break;
+          }
         }
         if (n > 0) setTick((t) => t + 1);
       }
@@ -120,6 +150,11 @@ export function App() {
       lastBeeps.current.set(d.id, beeps[beeps.length - 1]);
     }
   });
+
+  // 警報喇叭：模擬播放中且有喇叭通電就響
+  const sirenOn = running && sim.devices.some((d) => d.type === 'buzzer' && d.state.on);
+  useEffect(() => setSiren(sirenOn), [sirenOn]);
+  useEffect(() => () => setSiren(false), []);
 
   // 自動儲存
   useEffect(() => {
@@ -171,7 +206,7 @@ export function App() {
       if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
       if (e.key === ' ') {
         e.preventDefault();
-        setRunning((r) => !r);
+        toggleRun();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -213,6 +248,7 @@ export function App() {
   };
 
   const loadFile = (f: ProjectFile) => {
+    auto.current.on = false;
     setRunning(false);
     const old = sim.load(f);
     setName(f.name);
@@ -233,6 +269,7 @@ export function App() {
 
   const sendKeys = (id: string, keys: string) => {
     for (const ch of keys) sim.action(id, 'key', ch);
+    kick();
     changed();
   };
 
@@ -450,10 +487,10 @@ export function App() {
   };
 
   return (
-    <div className={`app${showSide ? '' : ' no-side'}`}>
+    <div className={`app${showSide ? '' : ' no-side'}${running ? '' : ' paused'}`}>
       <div className="toolbar">
         <h1>控制系統模擬器</h1>
-        <button className="primary" onClick={() => setRunning((r) => !r)} title="空白鍵">
+        <button className="primary" onClick={toggleRun} title="空白鍵（操作設備時會自動播放，動作跑完自動暫停）">
           {running ? '⏸ 暫停' : '▶ 播放'}
         </button>
         <button
@@ -675,6 +712,7 @@ export function App() {
                   short={sol.shorts.has(d.id)}
                   act={(a, v) => {
                     sim.action(d.id, a, v);
+                    kick();
                     changed();
                   }}
                 />

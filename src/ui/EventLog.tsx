@@ -42,7 +42,7 @@ export function EventLog({ sim, selected, changed }: { sim: Simulator; selected:
             {list.length === 0 && (
               <tr>
                 <td colSpan={4} className="hint">
-                  按「播放」後，按鈕、感應器、繼電器、主機輸入輸出的每次動作都會記錄在這裡。
+                  操作設備後，按鈕、感應器、繼電器、主機輸入輸出的每次動作都會記錄在這裡。
                 </td>
               </tr>
             )}
