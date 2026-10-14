@@ -291,12 +291,13 @@ table.small th {
   stroke-width: 1.5;
 }
 .img-port {
-  fill: #fff;
-  stroke: #555;
-  stroke-width: 1;
+  fill: transparent;
+}
+.img-port.on {
+  fill: var(--on);
+  fill-opacity: 0.75;
 }
 .port.on,
-.img-port.on,
 .pin.on {
   fill: var(--on);
   stroke: var(--on);

@@ -1046,12 +1046,15 @@ export const cvia92: DeviceModel<HostParams, HostState> = {
     { id: 'SCOM', label: 'SENSOR COM' },
     { id: 'IR', label: '紅外線' },
     { id: 'SM', label: 'SM' },
-    { id: 'UP', label: '馬達 上' },
-    { id: 'STOP', label: '馬達 停' },
-    { id: 'DOWN', label: '馬達 下' },
-    { id: 'MCOM', label: '馬達 共' },
-    { id: 'RNO', label: 'RELAY NO' },
-    { id: 'RCOM', label: 'RELAY COM' },
+    { id: 'UPNC', label: '上 NC' },
+    { id: 'UP', label: '上 NO' },
+    { id: 'STOP', label: '停 NO' },
+    { id: 'DOWNNC', label: '下 NC' },
+    { id: 'DOWN', label: '下 NO' },
+    { id: 'MCOM', label: '共 G' },
+    { id: 'RNC', label: 'RELAY4 NC' },
+    { id: 'RCOM', label: 'RELAY4 G' },
+    { id: 'RNO', label: 'RELAY4 NO' },
   ],
   defaultParams: defaultHostParams,
   init: initHostState,
@@ -1064,10 +1067,11 @@ export const cvia92: DeviceModel<HostParams, HostState> = {
   ],
   contacts(s) {
     const c: [string, string][] = [];
-    if (s.out.UP) c.push(['MCOM', 'UP']);
+    // 上、下、RELAY4 是獨立的繼電器：沒動作時 NC 與共點接通，動作時改成 NO 接通
+    c.push(s.out.UP ? ['MCOM', 'UP'] : ['MCOM', 'UPNC']);
     if (s.out.STOP) c.push(['MCOM', 'STOP']);
-    if (s.out.DOWN) c.push(['MCOM', 'DOWN']);
-    if (s.out.RELAY) c.push(['RCOM', 'RNO']);
+    c.push(s.out.DOWN ? ['MCOM', 'DOWN'] : ['MCOM', 'DOWNNC']);
+    c.push(s.out.RELAY ? ['RCOM', 'RNO'] : ['RCOM', 'RNC']);
     return c;
   },
   step: hostStep,

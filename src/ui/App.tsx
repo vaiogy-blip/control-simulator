@@ -633,6 +633,7 @@ export function App() {
                       style={{ cursor: 'crosshair' }}
                     >
                       {imgDev ? (
+                        // 用圖上原本的端子圓點；只放透明的點擊範圍，帶電時才疊上橘色
                         <circle className={`img-port${on ? ' on' : ''}`} cx={pp.x} cy={pp.y} r={d.type === 'cvia92' ? HOST_IMG.portR : GATE_IMG.portR} />
                       ) : socket ? (
                         <>

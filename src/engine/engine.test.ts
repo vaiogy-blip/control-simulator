@@ -209,6 +209,19 @@ describe('電路', () => {
     expect(host.state.out.UP).toBe(false);
   });
 
+  it('上的 NC 平常與共點接通，上動作時斷開', () => {
+    const { sim, by, host } = load(hostWithRelays());
+    const lamp = sim.addDevice('lamp', 0, 0);
+    sim.connect(host.id, 'UPNC', lamp.id, 'P');
+    sim.connect(lamp.id, 'COM', by('電源').id, 'N');
+    sim.step();
+    expect(lamp.state.on).toBe(true);
+    sim.action(by('遙控器').id, 'keyDown', 1);
+    sim.run(0.3);
+    expect(host.state.out.UP).toBe(true);
+    expect(lamp.state.on).toBe(false);
+  });
+
   it('接線節點把多條線接在一起', () => {
     const sim = new Simulator();
     const psu = sim.addDevice('power', 0, 0);
