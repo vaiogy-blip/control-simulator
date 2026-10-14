@@ -378,3 +378,39 @@ describe('出廠預設', () => {
     expect(host.state.motion).toBe('up');
   });
 });
+
+/** 和畫面的自動播放同樣判斷：狀態連續靜止 1 秒就算這次動作跑完 */
+function runUntilSettled(sim: Simulator, max = 120) {
+  let sig = '';
+  let quiet = 0;
+  while (sim.t < max) {
+    sim.step();
+    const s = sim.signature();
+    if (s !== sig || sim.busy()) {
+      sig = s;
+      quiet = 0;
+    } else if ((quiet += 0.05) >= 1) return sim.t;
+  }
+  return sim.t;
+}
+
+describe('自動播放判斷動作跑完', () => {
+  it('沒有操作時很快判斷為靜止', () => {
+    const { sim } = load();
+    sim.run(5);
+    const t0 = sim.t;
+    expect(runUntilSettled(sim) - t0).toBeLessThan(1.2);
+  });
+
+  it('刷卡後要等開門、7# 等待、關門整個跑完才算結束', () => {
+    const { sim, by, host, gate } = load();
+    sim.run(5);
+    sim.action(by('感應卡機').id, 'swipe');
+    const took = runUntilSettled(sim) - 5;
+    expect(took).toBeGreaterThan(8 + host.params.autoClose7);
+    expect(gate.state.pos).toBeCloseTo(0, 2);
+    expect(host.state.motion).not.toBe('up');
+    expect(host.state.autoCloseT).toBeNull();
+    expect(by('警示燈').state.on).toBe(false);
+  });
+});

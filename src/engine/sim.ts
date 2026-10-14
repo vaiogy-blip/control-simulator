@@ -195,6 +195,16 @@ export class Simulator {
     this.record();
   }
 
+  /** 各設備狀態的指紋：狀態不再變化表示這次動作已完整跑完 */
+  signature(): string {
+    return JSON.stringify(this.devices.map((d) => this.model(d).quiet?.(d.state) ?? d.state));
+  }
+
+  /** 是否有設備還在等待計時（狀態不變但動作還沒結束） */
+  busy(): boolean {
+    return this.devices.some((d) => this.model(d).busy?.(d.state, d.params) ?? false);
+  }
+
   run(seconds: number) {
     const n = Math.round(seconds / DT);
     for (let k = 0; k < n; k++) this.step();

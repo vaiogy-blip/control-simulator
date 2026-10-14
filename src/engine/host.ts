@@ -1124,6 +1124,14 @@ export const cvia92: DeviceModel<HostParams, HostState> = {
       { name: 'RELAY', on: s.out.RELAY, words: o },
     ];
   },
+  quiet(s) {
+    return { ...s, t: 0, irBlockedT: 0, beeps: null };
+  },
+  busy(s, p) {
+    if (s.keypad.buf || s.keypad.session) return true;
+    if (p.sos16 > 0 && Object.values(s.held).some((h) => h.keys.includes(4) && !h.sosFired)) return true;
+    return p.irAlarm23 > 0 && !s.irAlarmFired && s.irBlockedT > 0;
+  },
   drainLog(s) {
     const n = Math.min(s.beepSeq - s.logged, s.beeps.length);
     s.logged = s.beepSeq;
