@@ -57,6 +57,11 @@ export function App() {
   const [tick, setTick] = useState(0);
   const [layoutRev, setLayoutRev] = useState(0);
   const [running, setRunning] = useState(false);
+  // 右側面板與下方動作紀錄可收起來，讓畫布大一點（記在這個瀏覽器）
+  const [showSide, setShowSide] = useState(() => readPref('control-sim-side', true));
+  const [showLog, setShowLog] = useState(() => readPref('control-sim-log', true));
+  useEffect(() => writePref('control-sim-side', showSide), [showSide]);
+  useEffect(() => writePref('control-sim-log', showLog), [showLog]);
   const [speed, setSpeed] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [sel, setSel] = useState<Sel>(null);
@@ -395,7 +400,7 @@ export function App() {
   };
 
   return (
-    <div className="app">
+    <div className={`app${showSide ? '' : ' no-side'}`}>
       <div className="toolbar">
         <h1>控制系統模擬器</h1>
         <button className="primary" onClick={() => setRunning((r) => !r)} title="空白鍵">
@@ -437,6 +442,12 @@ export function App() {
             ))}
           </select>
         </label>
+        <button className={showSide ? 'toggle on' : 'toggle'} onClick={() => setShowSide((v) => !v)} title="顯示或收起右側的使用方式／設定面板">
+          右側面板
+        </button>
+        <button className={showLog ? 'toggle on' : 'toggle'} onClick={() => setShowLog((v) => !v)} title="顯示或收起下方的接點動作紀錄">
+          動作紀錄
+        </button>
         <span className="spacer" />
         <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={{ width: 170 }} title="專案名稱" />
         <select
@@ -701,11 +712,30 @@ export function App() {
         </svg>
       </div>
 
-      <Inspector sim={sim} device={selDevice} wire={selWire} changed={changed} relayout={relayout} sendKeys={sendKeys} />
+      {showSide && <Inspector sim={sim} device={selDevice} wire={selWire} changed={changed} relayout={relayout} sendKeys={sendKeys} />}
 
-      <div className="chart">
-        <EventLog sim={sim} selected={selDevice?.id ?? null} tick={tick} changed={changed} />
-      </div>
+      {showLog && (
+        <div className="chart">
+          <EventLog sim={sim} selected={selDevice?.id ?? null} tick={tick} changed={changed} />
+        </div>
+      )}
     </div>
   );
+}
+
+function readPref(key: string, def: boolean): boolean {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? def : v === '1';
+  } catch {
+    return def;
+  }
+}
+
+function writePref(key: string, v: boolean) {
+  try {
+    localStorage.setItem(key, v ? '1' : '0');
+  } catch {
+    // 無法記住時忽略
+  }
 }
