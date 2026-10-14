@@ -6,7 +6,7 @@ import type { BeepLog, HostState } from '../engine/host';
 import { DeviceBody } from './DeviceBody';
 import { Inspector } from './Inspector';
 import { EventLog } from './EventLog';
-import { playBeep } from './sound';
+import { playBeep, setSiren } from './sound';
 import { boxOf, GATE_IMG, HOST_IMG, layoutOf, portWorld, scaleOf, titleBelow } from './layout';
 import { G, junctions, routeAll, type RouteReq } from './route';
 import { wireColor } from './wires';
@@ -150,6 +150,11 @@ export function App() {
       lastBeeps.current.set(d.id, beeps[beeps.length - 1]);
     }
   });
+
+  // 警報喇叭：模擬播放中且有喇叭通電就響
+  const sirenOn = running && sim.devices.some((d) => d.type === 'buzzer' && d.state.on);
+  useEffect(() => setSiren(sirenOn), [sirenOn]);
+  useEffect(() => () => setSiren(false), []);
 
   // 自動儲存
   useEffect(() => {
@@ -482,7 +487,7 @@ export function App() {
   };
 
   return (
-    <div className={`app${showSide ? '' : ' no-side'}`}>
+    <div className={`app${showSide ? '' : ' no-side'}${running ? '' : ' paused'}`}>
       <div className="toolbar">
         <h1>控制系統模擬器</h1>
         <button className="primary" onClick={toggleRun} title="空白鍵（操作設備時會自動播放，動作跑完自動暫停）">

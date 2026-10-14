@@ -295,8 +295,14 @@ export function DeviceBody({ d, w, h, act, mismatch, short }: Props) {
     case 'lamp':
       return (
         <>
-          <path d={`M ${cx - 24},52 v -14 a 24 24 0 0 1 48 0 v 14 z`} fill={s.on ? p.color : 'var(--panel-2)'} stroke="var(--border)" />
-          {s.on && <circle cx={cx} cy={36} r={32} fill={p.color} opacity={0.2} />}
+          <path d={`M ${cx - 24},52 v -14 a 24 24 0 0 1 48 0 v 14 z`} fill="var(--panel-2)" stroke="var(--border)" />
+          {/* 通電時亮；設成閃爍的燈一亮一滅（暫停模擬時停在當下） */}
+          {s.on && (
+            <g className={p.blink === false ? undefined : 'lamp-blink'}>
+              <path d={`M ${cx - 24},52 v -14 a 24 24 0 0 1 48 0 v 14 z`} fill={p.color} stroke="var(--border)" />
+              <circle cx={cx} cy={36} r={32} fill={p.color} opacity={0.2} />
+            </g>
+          )}
           <rect x={cx - 24} y={52} width={48} height={22} fill="#e9e6d6" stroke="var(--border)" />
           <text className="svg-muted" x={cx} y={67} textAnchor="middle" style={{ fill: '#555' }}>
             {mismatch ? '電壓不符' : p.label}
@@ -320,7 +326,7 @@ export function DeviceBody({ d, w, h, act, mismatch, short }: Props) {
       return (
         <>
           <Frame w={w} h={h - 26} />
-          <text className="svg-text" x={cx} y={36} textAnchor="middle" style={{ fontSize: 20 }}>
+          <text className={`svg-text${s.on ? ' buzzer-on' : ''}`} x={cx} y={36} textAnchor="middle" style={{ fontSize: 20 }}>
             {s.on ? '🔊' : '🔈'}
           </text>
           <text className="svg-muted" x={cx} y={52} textAnchor="middle">

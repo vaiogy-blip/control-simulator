@@ -240,7 +240,7 @@ export const gate: DeviceModel<GateParams, GateState> = {
   ],
 };
 
-export const lamp: DeviceModel<{ color: string; label: string; rating: string }, { on: boolean }> = {
+export const lamp: DeviceModel<{ color: string; label: string; blink: boolean; rating: string }, { on: boolean }> = {
   type: 'lamp',
   name: '指示燈',
   category: '輸出設備',
@@ -248,7 +248,7 @@ export const lamp: DeviceModel<{ color: string; label: string; rating: string },
     { id: 'P', label: '+' },
     { id: 'COM', label: 'COM' },
   ],
-  defaultParams: () => ({ color: '#f5a623', label: '警示燈', rating: 'any' }),
+  defaultParams: () => ({ color: '#f5a623', label: '警示燈', blink: true, rating: 'any' }),
   init: () => ({ on: false }),
   loads: (p) => [{ id: 'L', a: 'P', b: 'COM', rating: parseRating(p.rating) }],
   step(s, _p, ctx) {

@@ -137,8 +137,10 @@ export function relayLatch(): ProjectFile {
   const lampRun = sim.addDevice('lamp', 720, 360, '運轉燈');
   lampRun.params.color = '#2ecc71';
   lampRun.params.label = '運轉';
+  lampRun.params.blink = false;
   const lampDelay = sim.addDevice('lamp', 860, 360, '延時燈');
   lampDelay.params.label = '延時到';
+  lampDelay.params.blink = false;
 
   // 自保持：+ → 停止(NC) → 啟動(NO) 並聯 R1 第一組 NO → R1 線圈 → −
   sim.connect(psu.id, 'P', stopBtn.id, 'COM', RED);

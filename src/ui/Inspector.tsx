@@ -87,6 +87,7 @@ const FIELDS: Record<string, FieldDef[]> = {
   lamp: [
     { key: 'label', label: '名稱', kind: 'text' },
     { key: 'color', label: '顏色', kind: 'color' },
+    { key: 'blink', label: '閃爍', kind: 'bool' },
     RATING,
   ],
   buzzer: [RATING],
@@ -122,7 +123,7 @@ const HELP: Record<string, string> = {
   pushButton: '按住圖示上的按鈕：COM 與 NO 接通、與 NC 斷開；放開則相反。',
   toggleSwitch: '點一下切換 ON／OFF：ON 時 COM 與 NO 接通，OFF 時 COM 與 NC 接通。',
   cardReader: '刷有效卡時 RELAY 吸合一段時間：COM 與 NO 接通。感應卡機的 NO、COM 接主機 KEY 的白（上）與綠（共）。',
-  lamp: '「+」與「COM」分別接到電源兩極（或經過接點）就會亮。額定電壓設「不限」時不檢查電壓。',
+  lamp: '「+」與「COM」分別接到電源兩極（或經過接點）就會亮；勾選「閃爍」時通電會一亮一滅。額定電壓設「不限」時不檢查電壓。',
   node: '接線節點。把接線拖到另一條線上也會自動加節點。',
   remote: '遙控器不需接線，按鍵會以無線方式送給所有主機。主機要先用 1# 登錄才會反應。',
   irSensor: '點「遮斷」切換狀態，點「通過」模擬一台車經過（遮斷一段時間後自動恢復）。遮斷時 COM 與 NO 接通。',
