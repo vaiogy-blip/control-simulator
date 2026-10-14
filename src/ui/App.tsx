@@ -7,7 +7,7 @@ import { DeviceBody } from './DeviceBody';
 import { Inspector } from './Inspector';
 import { EventLog } from './EventLog';
 import { playBeep } from './sound';
-import { boxOf, layoutOf, portWorld, scaleOf, titleBelow } from './layout';
+import { boxOf, GATE_IMG, HOST_IMG, layoutOf, portWorld, scaleOf, titleBelow } from './layout';
 import { G, junctions, routeAll, type RouteReq } from './route';
 import { wireColor } from './wires';
 
@@ -594,6 +594,8 @@ export function App() {
             }
             const ports = sim.ports(d);
             const socket = d.type === 'relay' || d.type === 'timer';
+            // 主機與柵欄機用圖片，端子標籤已印在圖上
+            const imgDev = d.type === 'cvia92' || d.type === 'gate';
             return (
               <g key={d.id} transform={`translate(${d.x},${d.y}) scale(${sc})`} className={selected ? 'dev-selected' : ''} onPointerDown={(e) => startMove(e, d)} style={{ cursor: 'move' }}>
                 {selected && <rect x={-6} y={-6} width={lay.w + 12} height={lay.h + 12} rx={8} className="sel-outline" />}
@@ -611,21 +613,11 @@ export function App() {
                 <text className="dev-title" x={d.type === 'cvia92' ? lay.w / 2 : 0} y={titleBelow(d) ? lay.h + 15 : -6} textAnchor={d.type === 'cvia92' ? 'middle' : 'start'}>
                   {d.name}
                 </text>
-                {d.type === 'cvia92' && (
-                  <>
-                    <rect x={6} y={lay.h - 42} width={lay.w - 12} height={42} rx={4} className="strip" />
-                    {lay.groups!.map((g) => (
-                      <text key={g.label} x={(g.x1 + g.x2) / 2} y={lay.h - 48} textAnchor="middle" className="strip-group">
-                        {g.label}
-                      </text>
-                    ))}
-                  </>
-                )}
                 {ports.map((p) => {
                   const pp = lay.ports[p.id];
                   if (!pp) return null;
                   const on = netLive(d.id, p.id);
-                  const labelY = d.type === 'cvia92' ? pp.y - 17 : pp.side === 'top' ? pp.y + 16 : pp.y - 9;
+                  const labelY = pp.side === 'top' ? pp.y + 16 : pp.y - 9;
                   return (
                     <g
                       key={p.id}
@@ -640,7 +632,9 @@ export function App() {
                       }}
                       style={{ cursor: 'crosshair' }}
                     >
-                      {socket ? (
+                      {imgDev ? (
+                        <circle className={`img-port${on ? ' on' : ''}`} cx={pp.x} cy={pp.y} r={d.type === 'cvia92' ? HOST_IMG.portR : GATE_IMG.portR} />
+                      ) : socket ? (
                         <>
                           <circle className={`pin${on ? ' on' : ''}`} cx={pp.x} cy={pp.y} r={10} />
                           <text className="pin-text" x={pp.x} y={pp.y + 4} textAnchor="middle">
@@ -649,7 +643,7 @@ export function App() {
                         </>
                       ) : (
                         <>
-                          <text className={d.type === 'cvia92' ? 'strip-text' : 'port-label'} x={pp.x} y={labelY} textAnchor="middle">
+                          <text className="port-label" x={pp.x} y={labelY} textAnchor="middle">
                             {pp.tag}
                           </text>
                           <circle className={`port${on ? ' on' : ''}`} cx={pp.x} cy={pp.y} r={6} />

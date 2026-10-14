@@ -20,18 +20,18 @@ export function parkingEntrance(): ProjectFile {
   rc.params.code = 'A1B2C3D4';
   host.params.remotes.push({ serial: 1, code: 'A1B2C3D4', suspended: false });
 
-  const card = sim.addDevice('cardReader', 40, 540, '感應卡機');
-  const ir = sim.addDevice('irSensor', 180, 540, '紅外線（門下）');
-  const bUp = sim.addDevice('pushButton', 350, 540, '押扣 上');
+  const card = sim.addDevice('cardReader', 40, 600, '感應卡機');
+  const ir = sim.addDevice('irSensor', 180, 600, '紅外線（門下）');
+  const bUp = sim.addDevice('pushButton', 350, 600, '押扣 上');
   bUp.params.label = '上';
-  const bStop = sim.addDevice('pushButton', 490, 540, '押扣 停');
+  const bStop = sim.addDevice('pushButton', 490, 600, '押扣 停');
   bStop.params.label = '停';
-  const bDown = sim.addDevice('pushButton', 630, 540, '押扣 下');
+  const bDown = sim.addDevice('pushButton', 630, 600, '押扣 下');
   bDown.params.label = '下';
 
-  const g = sim.addDevice('gate', 720, 40, '柵欄機（傳統馬達）');
-  const psu = sim.addDevice('power', 720, 300, '電源 DC12V');
-  const lamp = sim.addDevice('lamp', 900, 300, '警示燈');
+  const g = sim.addDevice('gate', 600, 40, '柵欄機（傳統馬達）');
+  const psu = sim.addDevice('power', 980, 640, '電源 DC12V');
+  const lamp = sim.addDevice('lamp', 1160, 640, '警示燈');
 
   // 感應卡機的 RELAY 接到 KEY 的「上」；2A1B 時停用押扣的 NC
   sim.connect(card.id, 'NO', host.id, 'KEY_W');
@@ -68,14 +68,14 @@ export function fastDoor(): ProjectFile {
   const rc = sim.addDevice('remote', 40, 40, '遙控器 A');
   rc.params.code = 'F1F2F3F4';
   host.params.remotes.push({ serial: 1, code: 'F1F2F3F4', suspended: false });
-  const ir = sim.addDevice('irSensor', 200, 540, '紅外線（門下）');
+  const ir = sim.addDevice('irSensor', 200, 600, '紅外線（門下）');
 
-  const g = sim.addDevice('gate', 720, 40, '快速門');
+  const g = sim.addDevice('gate', 600, 40, '快速門');
   g.params.mode = 'pulse';
   g.params.openTime = 2.5;
   g.params.closeTime = 2.5;
-  const psu = sim.addDevice('power', 720, 300, '電源 DC12V');
-  const lamp = sim.addDevice('lamp', 900, 300, '警示燈');
+  const psu = sim.addDevice('power', 980, 640, '電源 DC12V');
+  const lamp = sim.addDevice('lamp', 1160, 640, '警示燈');
 
   sim.connect(ir.id, 'NO', host.id, 'IR');
   sim.connect(ir.id, 'COM', host.id, 'SCOM');
@@ -97,7 +97,7 @@ export function hostWithRelays(): ProjectFile {
   host.params.hold14 = 1;
   host.params.travel8 = 3;
   host.params.autoClose7 = 8;
-  const rc = sim.addDevice('remote', 40, 500, '遙控器 A');
+  const rc = sim.addDevice('remote', 40, 580, '遙控器 A');
   rc.params.code = 'C0FFEE01';
   host.params.remotes.push({ serial: 1, code: 'C0FFEE01', suspended: false });
 

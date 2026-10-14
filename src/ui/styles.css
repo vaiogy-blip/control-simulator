@@ -290,7 +290,13 @@ table.small th {
   stroke: var(--line);
   stroke-width: 1.5;
 }
+.img-port {
+  fill: #fff;
+  stroke: #555;
+  stroke-width: 1;
+}
 .port.on,
+.img-port.on,
 .pin.on {
   fill: var(--on);
   stroke: var(--on);
@@ -580,4 +586,11 @@ input[type='range'] {
   border: 1px solid var(--accent);
   border-radius: 6px;
   font-size: 12px;
+}
+
+/* 主機顯示窗文字 */
+.host-lcd {
+  fill: #7dffa6;
+  font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+  pointer-events: none;
 }

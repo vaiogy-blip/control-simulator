@@ -54,17 +54,6 @@ const FIELDS: Record<string, FieldDef[]> = {
       ],
     },
   ],
-  cvia92: [
-    {
-      key: 'look',
-      label: '圖示外觀',
-      kind: 'select',
-      options: [
-        ['diagram', '接線圖風格'],
-        ['photo', '實機外觀'],
-      ],
-    },
-  ],
   toggleSwitch: [{ key: 'label', label: '名稱', kind: 'text' }],
   loopDetector: [
     { key: 'onDelay', label: '偵測延遲（秒）', kind: 'number', step: 0.1 },

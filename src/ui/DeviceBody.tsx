@@ -1,6 +1,8 @@
 import type { DeviceInstance } from '../engine/types';
-import { paramSummary, type HostState } from '../engine/host';
-import { SOCKET } from './layout';
+import type { HostState } from '../engine/host';
+import { GATE_IMG, HOST_IMG, SOCKET } from './layout';
+import hostImg from './assets/host.webp';
+import gateImg from './assets/gate.webp';
 
 interface Props {
   d: DeviceInstance;
@@ -56,32 +58,12 @@ function SvgButton(props: {
 
 const Frame = ({ w, h }: { w: number; h: number }) => <rect className="dev-body" width={w} height={h} rx={6} />;
 
-/** 主機外框：依接線圖上的柵欄機主機外形（上方微外擴、下方大圓弧） */
-function hostOutline(w: number, h: number) {
-  const x1 = 24;
-  const x2 = w - 24;
-  const mid = h * 0.42;
-  return [
-    `M ${x1 + 14},6`,
-    `H ${x2 - 14}`,
-    `Q ${x2 + 2},6 ${x2},22`,
-    `C ${x2 - 2},${mid * 0.6} ${x2 - 10},${mid * 0.8} ${x2 - 6},${mid}`,
-    `C ${x2 + 16},${h * 0.62} ${x2 + 10},${h * 0.86} ${x2 - 40},${h - 8}`,
-    `Q ${w / 2},${h + 6} ${x1 + 40},${h - 8}`,
-    `C ${x1 - 10},${h * 0.86} ${x1 - 16},${h * 0.62} ${x1 + 6},${mid}`,
-    `C ${x1 + 10},${mid * 0.8} ${x1 + 2},${mid * 0.6} ${x1},22`,
-    `Q ${x1 - 2},6 ${x1 + 14},6`,
-    'Z',
-  ].join(' ');
-}
-
-function HostDiagram({ d, w, h }: { d: DeviceInstance; w: number; h: number }) {
+/** 全功能主機：使用者提供的主機圖，顯示窗寫主機目前的狀態，四顆燈依狀態亮起 */
+function HostImage({ d }: { d: DeviceInstance }) {
   const hs = d.state as HostState;
   const p = d.params;
-  const bodyH = h - 60;
-  const cx = w / 2;
-  const params = paramSummary(p);
-  const shown = params.slice(0, 12);
+  const { w, h, win, ledX, ledY, ledR } = HOST_IMG;
+  const cx = (win.x1 + win.x2) / 2;
   const timer =
     hs.autoCloseT !== null
       ? `自動關門倒數 ${Math.ceil(hs.autoCloseT)} 秒`
@@ -93,124 +75,26 @@ function HostDiagram({ d, w, h }: { d: DeviceInstance; w: number; h: number }) {
             ? '分段定時保持開門'
             : `${p.motorSwitch === 'electronic' ? '電' : '机'}・行程 ${p.travel8}s・自動降 ${p.autoClose7}s`;
   const leds = [
-    { on: !hs.cut, c: '#e03131', t: '電源' },
-    { on: hs.motion === 'up', c: '#2f9e44', t: '上' },
-    { on: hs.motion === 'down', c: '#2f9e44', t: '下' },
-    { on: hs.out.RELAY, c: '#f08c00', t: 'RELAY' },
-    { on: hs.keypad.buf !== '' || !!hs.keypad.session, c: '#fab005', t: '設定中' },
+    { on: !hs.cut, c: '#ff4d4d', t: '電源' },
+    { on: hs.motion === 'up', c: '#4dff88', t: '上' },
+    { on: hs.motion === 'down', c: '#4dff88', t: '下' },
+    { on: hs.out.RELAY, c: '#ffb347', t: 'RELAY' },
   ];
+  const typing = hs.keypad.buf !== '' || !!hs.keypad.session;
   return (
     <>
-      <path d={hostOutline(w, bodyH)} className="diagram-shape" />
-      <rect x={70} y={26} width={w - 140} height={78} rx={14} className="diagram-shape" />
-      <text x={cx} y={56} textAnchor="middle" className="diagram-text" style={{ fontSize: 20 }}>
-        全功能主機
-      </text>
-      <text x={cx} y={80} textAnchor="middle" className="diagram-text" style={{ fontSize: 14, fontFamily: 'ui-monospace, Consolas, monospace' }}>
+      <image href={hostImg} width={w} height={h} preserveAspectRatio="none" />
+      <text x={cx} y={win.y1 + 40} textAnchor="middle" className="host-lcd" style={{ fontSize: 28, fontWeight: 700 }}>
         {hs.status}
-        {hs.keypad.buf ? ` ${hs.keypad.buf.replace(/\*/g, '米')}` : ''}
       </text>
-      <text x={cx} y={97} textAnchor="middle" className="diagram-muted">
-        {timer}
+      <text x={cx} y={win.y1 + 64} textAnchor="middle" className="host-lcd" style={{ fontSize: 15 }}>
+        {typing ? `設定 ${hs.keypad.buf.replace(/\*/g, '米')}` : timer}
       </text>
       {leds.map((l, i) => (
-        <g key={i}>
-          <circle cx={cx - 64 + i * 32} cy={122} r={6} fill={l.on ? l.c : 'none'} stroke="currentColor" className="diagram-led" />
-          <text x={cx - 64 + i * 32} y={140} textAnchor="middle" className="diagram-muted" style={{ fontSize: 9 }}>
-            {l.t}
-          </text>
-        </g>
+        <circle key={i} cx={ledX[i]} cy={ledY} r={ledR} fill={l.on ? l.c : '#c8cacb'}>
+          <title>{l.t}</title>
+        </circle>
       ))}
-      <rect x={78} y={152} width={w - 156} height={bodyH - 200} rx={14} className="diagram-shape" />
-      {shown.length === 0 && (
-        <text x={cx} y={180} textAnchor="middle" className="diagram-muted">
-          出廠預設
-        </text>
-      )}
-      {shown.map((c, i) => (
-        <text
-          key={i}
-          x={shown.length > 6 ? (i < Math.ceil(shown.length / 2) ? 100 : cx + 8) : cx - 40}
-          y={176 + (shown.length > 6 ? i % Math.ceil(shown.length / 2) : i) * 17}
-          className="diagram-text"
-          style={{ fontSize: 13, fontFamily: 'ui-monospace, Consolas, monospace' }}
-        >
-          {c}
-        </text>
-      ))}
-      {params.length > shown.length && (
-        <text x={cx} y={bodyH - 54} textAnchor="middle" className="diagram-muted">
-          …另 {params.length - shown.length} 項
-        </text>
-      )}
-    </>
-  );
-}
-
-function HostPhoto({ d, w, h }: { d: DeviceInstance; w: number; h: number }) {
-  // 外觀依照片：黑色機殼、藍色面板，下半部收成大圓弧底
-  const hs = d.state as HostState;
-  const p = d.params;
-  const bw = 164;
-  const ox = (w - bw) / 2;
-  const oy = 4;
-  const bh = h - 68;
-  const r = bw / 2;
-  const shell = [
-    `M ${ox + 14},${oy}`,
-    `H ${ox + bw - 14}`,
-    `Q ${ox + bw - 4},${oy} ${ox + bw - 3},${oy + 10}`,
-    `L ${ox + bw},${oy + 96}`,
-    `C ${ox + bw},${oy + 108} ${ox + bw - 7},${oy + 110} ${ox + bw - 7},${oy + 122}`,
-    `L ${ox + bw - 7},${oy + bh - r + 14}`,
-    `A ${r - 7},${r - 14} 0 0 1 ${ox + 7},${oy + bh - r + 14}`,
-    `L ${ox + 7},${oy + 122}`,
-    `C ${ox + 7},${oy + 110} ${ox},${oy + 108} ${ox},${oy + 96}`,
-    `L ${ox + 3},${oy + 10}`,
-    `Q ${ox + 4},${oy} ${ox + 14},${oy}`,
-    'Z',
-  ].join(' ');
-  const leds = [
-    { on: !hs.cut, c: '#ff4d4d' },
-    { on: hs.motion === 'up', c: '#4dff88' },
-    { on: hs.motion === 'down', c: '#4dff88' },
-    { on: hs.keypad.buf !== '' || !!hs.keypad.session, c: '#ffd84d' },
-  ];
-  const cx = ox + bw / 2;
-  const timer =
-    hs.autoCloseT !== null
-      ? `自動關門 ${Math.ceil(hs.autoCloseT)}s`
-      : hs.stage2T !== null
-        ? `二段關門 ${hs.stage2T.toFixed(1)}s`
-        : `${p.motorSwitch === 'electronic' ? '電' : '机'}・行程 ${p.travel8}s`;
-  return (
-    <>
-      <path d={shell} fill="#1c1c1e" stroke="#000" />
-      <rect x={ox + 18} y={oy + 12} width={bw - 36} height={40} rx={6} fill="#1d2f9e" stroke="#c9d2ff" />
-      <text x={cx} y={oy + 38} textAnchor="middle" fill="#fff" style={{ fontSize: 15, fontWeight: 800, fontStyle: 'italic' }}>
-        全功能主機
-      </text>
-      {leds.map((l, i) => (
-        <circle key={i} cx={ox + 34 + i * 32} cy={oy + 72} r={4.5} fill={l.on ? l.c : '#0b0b0c'} stroke="#555" />
-      ))}
-      <rect x={ox + 16} y={oy + 92} width={bw - 32} height={88} rx={8} fill="#1d2f9e" />
-      <text x={cx} y={oy + 117} textAnchor="middle" fill="#fff" style={{ fontSize: 15, fontWeight: 800 }}>
-        全功能無線
-      </text>
-      <text x={cx} y={oy + 135} textAnchor="middle" fill="#ffd400" style={{ fontSize: 10, fontWeight: 700 }}>
-        車道門禁管制系統
-      </text>
-      <rect x={ox + 19} y={oy + 150} width={bw - 38} height={18} rx={2} fill="#ffd400" />
-      <text x={cx} y={oy + 162.5} textAnchor="middle" fill="#111" style={{ fontSize: 7.5, fontWeight: 700 }}>
-        緊急求救 防盜保全 自動控制 門禁連線
-      </text>
-      <text x={cx} y={oy + 200} textAnchor="middle" fill="#7dffa6" style={{ fontSize: 12, fontFamily: 'monospace' }}>
-        {hs.status}
-        {hs.keypad.buf ? ` ${hs.keypad.buf.replace(/\*/g, '米')}` : ''}
-      </text>
-      <text x={cx} y={oy + 216} textAnchor="middle" fill="#9aa3b2" style={{ fontSize: 9, fontFamily: 'monospace' }}>
-        {timer}
-      </text>
     </>
   );
 }
@@ -384,29 +268,24 @@ export function DeviceBody({ d, w, h, act, mismatch, short }: Props) {
       );
     }
     case 'gate': {
-      const pivotX = 46;
-      const pivotY = h - 46;
-      const len = w - 80;
-      const ang = -s.pos * 80;
+      // 柵欄桿：關（0%）水平向右，開（100%）垂直向上
+      const { arm, armW, pivotX, pivotY, imgW, imgH } = GATE_IMG;
+      const ang = -s.pos * 90;
       return (
         <>
-          <Frame w={w} h={h} />
-          <clipPath id={`clip-${d.id}`}>
-            <rect x={2} y={2} width={w - 4} height={h - 30} />
-          </clipPath>
-          <g clipPath={`url(#clip-${d.id})`}>
-            <g transform={`rotate(${ang} ${pivotX} ${pivotY})`}>
-              <rect x={pivotX} y={pivotY - 4} width={len} height={8} rx={3} fill="#e74c3c" />
-              {[0.2, 0.5, 0.8].map((f) => (
-                <rect key={f} x={pivotX + len * f} y={pivotY - 4} width={len * 0.12} height={8} fill="#fff" />
-              ))}
-            </g>
+          <g transform={`rotate(${ang} ${pivotX} ${pivotY})`}>
+            <rect x={pivotX} y={pivotY - armW / 2} width={arm} height={armW} rx={2} fill="#fff" stroke="#c8cacb" />
+            {[0.25, 0.5, 0.75].map((f) => (
+              <rect key={f} x={pivotX + arm * f - arm * 0.07} y={pivotY - armW / 2} width={arm * 0.14} height={armW} fill="#e5222b" />
+            ))}
           </g>
-          <rect x={pivotX - 16} y={pivotY - 10} width={28} height={30} rx={3} fill="var(--muted)" />
-          <text className="svg-muted" x={w - 10} y={20} textAnchor="end">
-            {p.mode === 'pulse' ? '控制板（脈衝）' : '馬達直驅'}・開度 {Math.round(s.pos * 100)}% {s.motion === 'up' ? '上升' : s.motion === 'down' ? '下降' : ''}
+          <image href={gateImg} x={0} y={arm} width={imgW} height={imgH} preserveAspectRatio="none" />
+          <text className="svg-muted" x={w - 4} y={arm + 34} textAnchor="end">
+            {p.mode === 'pulse' ? '控制板（脈衝）' : '馬達直驅'}
           </text>
-          <line x1={4} x2={w - 4} y1={h - 26} y2={h - 26} className="socket-line" />
+          <text className="svg-muted" x={w - 4} y={arm + 48} textAnchor="end">
+            開度 {Math.round(s.pos * 100)}% {s.motion === 'up' ? '上升' : s.motion === 'down' ? '下降' : ''}
+          </text>
         </>
       );
     }
@@ -450,7 +329,7 @@ export function DeviceBody({ d, w, h, act, mismatch, short }: Props) {
     case 'timer':
       return <Socket d={d} w={w} h={h} mismatch={mismatch} />;
     case 'cvia92':
-      return p.look === 'photo' ? <HostPhoto d={d} w={w} h={h} /> : <HostDiagram d={d} w={w} h={h} />;
+      return <HostImage d={d} />;
   }
   return null;
 }
