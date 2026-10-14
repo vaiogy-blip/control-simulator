@@ -268,20 +268,19 @@ export function DeviceBody({ d, w, h, act, mismatch, short }: Props) {
       );
     }
     case 'gate': {
-      // 柵欄桿：軸心在機箱上方的圓圈，關（0%）水平向右，開（100%）垂直向上
+      // 柵欄桿：軸心在機箱上方的圓圈，畫在機箱後面；關（0%）水平向右，開（100%）垂直向上
       const { armW, pivotX, imgW, imgH } = GATE_IMG;
       const { arm, top, pivotY } = gateGeom(p.armLength);
       const ang = -s.pos * 90;
       return (
         <>
-          <image href={gateImg} x={0} y={top} width={imgW} height={imgH} preserveAspectRatio="none" />
           <g transform={`rotate(${ang} ${pivotX} ${pivotY})`}>
             <rect x={pivotX} y={pivotY - armW / 2} width={arm} height={armW} rx={2} fill="#fff" stroke="#c8cacb" />
             {[0.25, 0.5, 0.75].map((f) => (
               <rect key={f} x={pivotX + arm * f - arm * 0.07} y={pivotY - armW / 2} width={arm * 0.14} height={armW} fill="#e5222b" />
             ))}
           </g>
-          <circle cx={pivotX} cy={pivotY} r={armW / 2 + 2} fill="#333" stroke="#e5222b" strokeWidth={2} />
+          <image href={gateImg} x={0} y={top} width={imgW} height={imgH} preserveAspectRatio="none" />
           <text className="svg-muted" x={imgW + 6} y={pivotY + 30}>
             {p.mode === 'pulse' ? '控制板（脈衝）' : '馬達直驅'}
           </text>
