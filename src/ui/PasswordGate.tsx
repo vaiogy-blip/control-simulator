@@ -2,7 +2,7 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 
 // 進入密碼：只存 SHA-256 雜湊值，不存明碼。
 // 要換密碼：把新密碼的 SHA-256（小寫 16 進位）貼到這裡。
-const PASSWORD_HASH = 'e6be6d6990f8d225270d00fd451e62ba96d82b249ee3bd1a02301c6d74b64866';
+const PASSWORD_HASH = 'dcdbb6aef457346f7fb3629e367a4917098e490397e866d3b18c701d1e4a5604';
 // 同一個瀏覽器通過後記住的天數
 const REMEMBER_DAYS = 7;
 const STORAGE_KEY = 'control-sim-unlock';
