@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
+import './PasswordGate.css';
 
 // 進入密碼：只存 SHA-256 雜湊值，不存明碼。
 // 要換密碼：把新密碼的 SHA-256（小寫 16 進位）貼到這裡。
