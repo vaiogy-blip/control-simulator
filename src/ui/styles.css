@@ -604,3 +604,12 @@ input[type='range'] {
   vector-effect: non-scaling-stroke;
   cursor: nwse-resize;
 }
+
+/* 框選 */
+.box-sel {
+  fill: var(--accent-weak);
+  fill-opacity: 0.35;
+  stroke: var(--accent);
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}

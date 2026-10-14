@@ -22,6 +22,8 @@ type Drag =
   | { kind: 'wire'; device: string; port: string; x: number; y: number; sx: number; sy: number; pts: Pt[]; click: boolean }
   /** 拖曳已選取接線的某一段來調整路徑 */
   | { kind: 'seg'; wire: string; i: number; horiz: boolean; full: Pt[] }
+  /** 在空白處拖出框框，框選多個設備 */
+  | { kind: 'box'; x0: number; y0: number; x1: number; y1: number }
   /** 拖曳選取設備右下角的小方塊調整圖示大小 */
   | { kind: 'scale'; id: string; s0: number; d0: number }
   | null;
@@ -67,6 +69,8 @@ export function App() {
   const [speed, setSpeed] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [sel, setSel] = useState<Sel>(null);
+  /** 框選的設備（兩個以上時一起移動、一起刪除） */
+  const [multi, setMulti] = useState<string[]>([]);
   const [drag, setDrag] = useState<Drag>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -133,13 +137,22 @@ export function App() {
   const selWire = sel?.kind === 'wire' ? sim.wires.find((w) => w.id === sel.id) ?? null : null;
 
   const deleteSelected = useCallback(() => {
+    if (multi.length > 1) {
+      if (!confirm(`刪除選取的 ${multi.length} 個設備？`)) return;
+      for (const id of multi) sim.removeDevice(id);
+      sim.solve();
+      setMulti([]);
+      setSel(null);
+      relayout();
+      return;
+    }
     if (!sel) return;
     if (sel.kind === 'device') sim.removeDevice(sel.id);
     else sim.removeWire(sel.id);
     sim.solve();
     setSel(null);
     relayout();
-  }, [sel, sim, relayout]);
+  }, [sel, multi, sim, relayout]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -151,7 +164,10 @@ export function App() {
         if (e.key === 'Backspace' || e.key === 'Delete') setDrag({ ...drag, pts: drag.pts.slice(0, -1) });
         return;
       }
-      if (e.key === 'Escape') setDrag(null);
+      if (e.key === 'Escape') {
+        setDrag(null);
+        setMulti([]);
+      }
       if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
       if (e.key === ' ') {
         e.preventDefault();
@@ -269,15 +285,30 @@ export function App() {
     if (drag.kind === 'move') {
       const d = sim.devices.find((x) => x.id === drag.id);
       if (d) {
-        const nx = Math.max(0, Math.round((p.x - drag.dx) / G) * G);
-        const ny = Math.max(20, Math.round((p.y - drag.dy) / G) * G);
-        if (nx !== d.x || ny !== d.y) {
-          d.x = nx;
-          d.y = ny;
+        // 框選的設備一起移動；接線兩端都在裡面的手動走線也跟著平移
+        const group = multi.includes(d.id) ? sim.devices.filter((o) => multi.includes(o.id)) : [d];
+        let ddx = Math.round((p.x - drag.dx) / G) * G - d.x;
+        let ddy = Math.round((p.y - drag.dy) / G) * G - d.y;
+        for (const o of group) {
+          ddx = Math.max(ddx, -o.x);
+          ddy = Math.max(ddy, 20 - o.y);
+        }
+        if (ddx || ddy) {
+          for (const o of group) {
+            o.x += ddx;
+            o.y += ddy;
+          }
+          if (group.length > 1) {
+            const ids = new Set(group.map((o) => o.id));
+            for (const w of sim.wires)
+              if (w.points && ids.has(w.from.device) && ids.has(w.to.device)) w.points = w.points.map((q) => ({ x: q.x + ddx, y: q.y + ddy }));
+          }
           if (!drag.moved) setDrag({ ...drag, moved: true });
           relayout();
         }
       }
+    } else if (drag.kind === 'box') {
+      setDrag({ ...drag, x1: p.x, y1: p.y });
     } else if (drag.kind === 'scale') {
       const d = sim.devices.find((x) => x.id === drag.id);
       if (d) {
@@ -413,6 +444,7 @@ export function App() {
     e.stopPropagation();
     if (drag?.kind === 'wire' && drag.click) return;
     setSel({ kind: 'device', id: d.id });
+    if (!multi.includes(d.id)) setMulti([]);
     const p = toSvg(e);
     setDrag({ kind: 'move', id: d.id, dx: p.x - d.x, dy: p.y - d.y, moved: false });
   };
@@ -535,6 +567,19 @@ export function App() {
           onPointerMove={onPointerMove}
           onPointerUp={() => {
             if ((drag?.kind === 'move' && drag.moved) || drag?.kind === 'scale') relayout();
+            if (drag?.kind === 'box') {
+              const x1 = Math.min(drag.x0, drag.x1);
+              const x2 = Math.max(drag.x0, drag.x1);
+              const y1 = Math.min(drag.y0, drag.y1);
+              const y2 = Math.max(drag.y0, drag.y1);
+              // 設備與框框有重疊就算選到
+              const hit = sim.devices.filter((d) => {
+                const b = boxOf(d, layouts.get(d.id));
+                return b.x1 < x2 && b.x2 > x1 && b.y1 < y2 && b.y2 > y1;
+              });
+              setMulti(x2 - x1 > 4 || y2 - y1 > 4 ? hit.map((d) => d.id) : []);
+              setSel(hit.length === 1 && (x2 - x1 > 4 || y2 - y1 > 4) ? { kind: 'device', id: hit[0].id } : null);
+            }
             if (drag?.kind === 'wire' && drag.click) return;
             setDrag(null);
           }}
@@ -543,7 +588,12 @@ export function App() {
           }}
           onPointerDown={(e) => {
             if (e.target === svgRef.current || (e.target as Element).id === 'grid-bg') {
-              if (!addBend(e)) setSel(null);
+              if (!addBend(e)) {
+                setSel(null);
+                setMulti([]);
+                const p = toSvg(e);
+                setDrag({ kind: 'box', x0: p.x, y0: p.y, x1: p.x, y1: p.y });
+              }
             }
           }}
         >
@@ -590,7 +640,7 @@ export function App() {
           {sim.devices.map((d) => {
             const lay = layouts.get(d.id)!;
             const sc = scaleOf(d);
-            const selected = sel?.kind === 'device' && sel.id === d.id;
+            const selected = (sel?.kind === 'device' && sel.id === d.id) || multi.includes(d.id);
             if (d.type === 'node') {
               const live = netLive(d.id, 'P');
               return (
@@ -672,7 +722,7 @@ export function App() {
                     </g>
                   );
                 })}
-                {selected && (
+                {selected && multi.length < 2 && (
                   <rect
                     className="scale-handle"
                     x={lay.w - 5 / sc}
@@ -707,6 +757,15 @@ export function App() {
                 </g>
               );
             })()}
+          {drag?.kind === 'box' && (
+            <rect
+              className="box-sel"
+              x={Math.min(drag.x0, drag.x1)}
+              y={Math.min(drag.y0, drag.y1)}
+              width={Math.abs(drag.x1 - drag.x0)}
+              height={Math.abs(drag.y1 - drag.y0)}
+            />
+          )}
           {sel?.kind === 'wire' &&
             !(drag?.kind === 'wire') &&
             (() => {
