@@ -222,6 +222,45 @@ describe('電路', () => {
     expect(lamp.state.on).toBe(false);
   });
 
+  it('紅綠燈模式：上吸合 14# 秒跑完一次，期間不延長、不反向、不停，最後 5 秒嗶聲倒數', () => {
+    const { sim, by, host } = load();
+    const id = host.id;
+    keys(sim, id, '11#27*');
+    keys(sim, id, '14#8*');
+    sim.run(1);
+    const rc = by('遙控器').id;
+    const beeps0 = (host.state as HostState).beeps.length;
+    sim.action(rc, 'keyDown', 1);
+    sim.run(0.2);
+    sim.action(rc, 'keyUp', 1);
+    expect(host.state.out.UP).toBe(true);
+    sim.run(2);
+    // 同向再按不延長、反向與停都不理
+    sim.action(rc, 'keyDown', 1);
+    sim.run(0.2);
+    sim.action(rc, 'keyUp', 1);
+    sim.action(rc, 'keyDown', 3);
+    sim.run(0.2);
+    sim.action(rc, 'keyUp', 3);
+    sim.action(rc, 'keyDown', 2);
+    sim.run(0.2);
+    sim.action(rc, 'keyUp', 2);
+    expect(host.state.out.UP).toBe(true);
+    expect(host.state.out.DOWN).toBe(false);
+    sim.run(5.2); // 共約 8 秒
+    expect(host.state.out.UP).toBe(false);
+    expect(host.state.motion).toBe('idle');
+    const countdown = (host.state as HostState).beeps.slice(beeps0).filter((b) => b.msg.startsWith('紅綠燈倒數'));
+    expect(countdown.map((b) => b.msg)).toEqual([5, 4, 3, 2, 1].map((n) => `紅綠燈倒數 ${n}`));
+    // 跑完後不自動下降，等下一次觸發
+    sim.run(15);
+    expect(host.state.out.DOWN).toBe(false);
+    sim.action(rc, 'keyDown', 3);
+    sim.run(0.2);
+    sim.action(rc, 'keyUp', 3);
+    expect(host.state.out.DOWN).toBe(true);
+  });
+
   it('接線節點把多條線接在一起', () => {
     const sim = new Simulator();
     const psu = sim.addDevice('power', 0, 0);

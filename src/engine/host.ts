@@ -199,6 +199,8 @@ export interface HostState {
   irResume: { dir: 'up' | 'down'; t: number | null } | null;
   holdOpen: boolean;
   outPulseT: number;
+  /** 紅綠燈模式（11#27）一次上／下循環剩餘秒數；跑完前不延長、不反向 */
+  trafficT: number;
   irBlockedT: number;
   irAlarmFired: boolean;
   warnPulseT: number;
@@ -260,6 +262,18 @@ function extMap(p: HostParams): string[] {
 
 function startMove(s: HostState, p: HostParams, dir: 'up' | 'down') {
   if (s.cut) return;
+  // 紅綠燈模式：上／下繼電器吸合 14# 秒數跑完一次完整循環，期間同向不延長、反向不改變，跑完才復歸
+  if (p.o11.traffic) {
+    if (s.trafficT > 0) return;
+    s.motion = dir;
+    s.lastDir = dir;
+    s.irResume = null;
+    s.pending = null;
+    s.trafficT = s.driveT = s.outPulseT = Math.max(0.1, p.hold14);
+    s.autoCloseT = null;
+    s.stage2T = null;
+    return;
+  }
   if (p.m13.protect && isMoving(s) && s.motion !== dir) {
     s.motion = 'idle';
     s.driveT = 0;
@@ -320,6 +334,8 @@ function down(s: HostState, p: HostParams) {
 }
 
 function stop(s: HostState, p: HostParams, opts: { restore?: boolean; manager?: boolean } = {}) {
+  // 紅綠燈循環中不接受停，一定跑完整個 14# 秒數
+  if (p.o11.traffic && s.trafficT > 0) return;
   s.motion = 'idle';
   s.driveT = 0;
   s.pending = null;
@@ -346,6 +362,8 @@ function cutPower(s: HostState, p: HostParams, manager = false) {
   s.pending = null;
   s.cut = true;
   s.cutByManager = manager;
+  s.trafficT = 0;
+  s.outPulseT = 0;
   s.autoCloseT = null;
   s.stage2T = null;
   if (p.o11.cutRelaySync) s.relayPulseT = p.relay15;
@@ -794,7 +812,8 @@ function hostStep(s: HostState, p: HostParams, ctx: StepCtx): void {
     s.irAlarmFired = false;
   }
   const irm = p.ir12;
-  if (ir && isMoving(s)) {
+  // 紅綠燈循環中紅外線也不改變動作
+  if (ir && isMoving(s) && !(p.o11.traffic && s.trafficT > 0)) {
     if (s.motion === 'down') {
       if (irm.includes(7)) {
         s.motion = 'idle';
@@ -862,13 +881,20 @@ function hostStep(s: HostState, p: HostParams, ctx: StepCtx): void {
       s.motion = 'idle';
       s.driveT = 0;
       s.pos = dir === 'up' ? 1 : 0;
-      if (dir === 'up' && p.autoClose7 > 0 && s.stage2T === null && !s.holdOpen) s.autoCloseT = p.autoClose7;
+      if (dir === 'up' && !p.o11.traffic && p.autoClose7 > 0 && s.stage2T === null && !s.holdOpen) s.autoCloseT = p.autoClose7;
       if (dir === 'down') {
         s.autoCloseT = null;
         s.stage2T = null;
         s.carPassed = false;
       }
     }
+  }
+
+  // 紅綠燈循環倒數：剩 5 秒起每秒嗶一聲
+  if (s.trafficT > 0) {
+    const before = s.trafficT;
+    s.trafficT = Math.max(0, s.trafficT - dt);
+    for (let n = 5; n >= 1; n--) if (before >= n - 1e-9 && s.trafficT < n - 1e-9) beep(s, '1', `紅綠燈倒數 ${n}`);
   }
 
   // 自動下降、二段式關門倒數（紅外線遮斷時暫停並重新計時）
@@ -983,6 +1009,7 @@ export const initHostState = (): HostState => ({
   irResume: null,
   holdOpen: false,
   outPulseT: 0,
+  trafficT: 0,
   irBlockedT: 0,
   irAlarmFired: false,
   warnPulseT: 0,
