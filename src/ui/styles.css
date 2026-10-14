@@ -77,7 +77,8 @@ button.danger {
 }
 select,
 input[type='text'],
-input[type='number'] {
+input[type='number'],
+input[type='password'] {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -573,4 +574,41 @@ input[type='range'] {
   border: 1px solid var(--accent);
   border-radius: 6px;
   font-size: 12px;
+}
+
+/* 進入密碼頁 */
+.gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 16px;
+}
+.gate-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+  padding: 28px 24px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.gate-box h1 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+.gate-box label {
+  color: var(--muted);
+  font-size: 14px;
+}
+.gate-box input {
+  font-size: 16px;
+  padding: 8px 10px;
+}
+.gate-error {
+  color: var(--danger);
+  font-size: 13px;
 }
